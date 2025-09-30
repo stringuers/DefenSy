@@ -109,7 +109,7 @@ graph TD
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-org/defensis-web-core.git
+   git clone https://github.com/stringuers/DefenSy.git
    cd defensis-web-core
    ```
 
