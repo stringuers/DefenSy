@@ -265,7 +265,7 @@ For general inquiries: kilenimoemen2004@gmail.com
 ---
 
 <p align="center">
-  ### 🚀 Built with ❤️ by the DefenSys Team  
+  🚀 Built with ❤️ by the DefenSys Team  
   Empowering developers to build secure applications with confidence
 </p>
 
