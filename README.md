@@ -222,7 +222,7 @@ Interactive API documentation is available at `/api/docs` when running the appli
 - SOC 2 Type II certification (in progress)
 - Regular third-party security assessments
 ## 📁 Project Structure
-```
+
 defensis-web-core/
 ├── src/                    # Frontend source code
 │   ├── components/         # React components
