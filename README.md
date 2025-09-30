@@ -264,10 +264,12 @@ For general inquiries: kilenimoemen2004@gmail.com
 
 ---
 
+---
 
+### 🚀 Built with ❤️ by the DefenSys Team  
 
-<div align="center">
-  <h3>🚀 Built with ❤️ by the DefenSys Team</h3>
-  <p>Empowering developers to build secure applications with confidence</p>
-</div>
+<p align="center">
+  Empowering developers to build secure applications with confidence
+</p>
+
 
