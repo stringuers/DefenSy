@@ -6,6 +6,7 @@ import json
 import asyncio
 import subprocess
 import uuid
+import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Any, Optional
@@ -16,6 +17,13 @@ import sqlite3
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 
+logger = logging.getLogger(__name__)
+
+# Import custom scanner
+from scanner import get_scanner
+
+# Import schemas and utilities from app
+# Note: These imports happen AFTER app.py has finished initializing
 from app import (
     UserCreate, UserLogin, User, Repository, ScanRequest, ScanResponse, 
     Vulnerability, SecurityAlert, DashboardStats,
@@ -30,6 +38,10 @@ dashboard_router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 scan_router = APIRouter(prefix="/api/scans", tags=["scanning"])
 repo_router = APIRouter(prefix="/api/repositories", tags=["repositories"])
 websocket_router = APIRouter()
+
+# Export routers for manual registration
+# These will be registered in app.py after all imports are complete
+__all__ = ['scan_router', 'repo_router', 'websocket_router', 'auth_router', 'dashboard_router']
 
 # ========================================
 # Authentication Routes
@@ -127,6 +139,14 @@ async def get_dashboard_stats(user_id: str = Depends(get_current_user)):
     cursor.execute("SELECT COUNT(*) FROM vulnerabilities v JOIN scans s ON v.scan_id = s.id WHERE s.user_id = ? AND v.status = 'open'", (user_id,))
     open_issues = cursor.fetchone()[0]
     
+    # Get total scans
+    cursor.execute("SELECT COUNT(*) FROM scans WHERE user_id = ?", (user_id,))
+    total_scans = cursor.fetchone()[0]
+    
+    # Get total vulnerabilities
+    cursor.execute("SELECT COUNT(*) FROM vulnerabilities v JOIN scans s ON v.scan_id = s.id WHERE s.user_id = ?", (user_id,))
+    total_vulnerabilities = cursor.fetchone()[0]
+    
     # Basic security score calculation
     security_score = max(0, 100 - (critical_issues * 20) - (open_issues * 2))
     
@@ -138,7 +158,9 @@ async def get_dashboard_stats(user_id: str = Depends(get_current_user)):
         critical_issues=critical_issues,
         issues_resolved=issues_resolved,
         last_scan=last_scan,
-        repositories=repositories_count
+        repositories=repositories_count,
+        total_scans=total_scans,
+        vulnerabilities=total_vulnerabilities
     )
 
 @dashboard_router.get("/alerts", response_model=List[SecurityAlert])
@@ -431,81 +453,33 @@ async def broadcast_scan_update(scan_id: str, update_data: Dict[str, Any]):
 # Background Tasks
 # ========================================
 
-async def run_defensys_cli(scan_id: str, target_path: str) -> List[Dict[str, Any]]:
-    """Execute the DefenSys CLI scanner and return vulnerabilities"""
-    vulnerabilities = []
-    
+async def run_security_scanner(scan_id: str, target_path: str, scan_type: str = "full") -> List[Dict[str, Any]]:
+    """Execute security scanner (Semgrep) and return vulnerabilities"""
     try:
         # Update status
-        await update_scan_status(scan_id, "running", 20, "Starting DefenSys security analysis...")
+        await update_scan_status(scan_id, "running", 20, "Initializing Semgrep scanner...")
         
-        # Path to the IasTam CLI
-        cli_path = IASTAM_PATH / "defensys_cli_api_enhanced.py"
+        # Get scanner instance
+        scanner = get_scanner()
         
-        if not cli_path.exists():
-            logger.warning(f"DefenSys CLI not found at {cli_path}, using mock data")
-            return get_mock_vulnerabilities()
+        await update_scan_status(scan_id, "running", 30, "Analyzing code with Semgrep...")
         
-        # Prepare CLI command
-        cmd = [
-            "python3", str(cli_path),
-            target_path,
-            "-r",  # recursive
-            "-f", "json",  # output format
-            "--deep-analysis"
-        ]
-        
-        await update_scan_status(scan_id, "running", 30, "Analyzing code structure...")
-        
-        # Execute CLI with timeout
-        process = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-            cwd=str(IASTAM_PATH.parent)
+        # Run the scan
+        vulnerabilities = await scanner.scan(
+            target_path=target_path,
+            scan_type=scan_type
         )
-        
-        await update_scan_status(scan_id, "running", 50, "Running security checks...")
-        
-        try:
-            stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=300)  # 5 minute timeout
-        except asyncio.TimeoutError:
-            process.kill()
-            await process.wait()
-            raise Exception("Scan timeout - analysis took too long")
         
         await update_scan_status(scan_id, "running", 80, "Processing scan results...")
         
-        if process.returncode != 0:
-            error_msg = stderr.decode() if stderr else "Unknown CLI error"
-            logger.error(f"DefenSys CLI failed: {error_msg}")
-            return get_mock_vulnerabilities()  # Fallback to mock data
-        
-        # Parse CLI output
-        try:
-            cli_output = stdout.decode()
-            cli_results = json.loads(cli_output)
-            
-            # Convert CLI results to our format
-            for result in cli_results.get('vulnerabilities', []):
-                vulnerabilities.append({
-                    "type": result.get('category', 'vulnerability'),
-                    "severity": result.get('severity', 'medium'),
-                    "title": result.get('description', 'Security issue detected'),
-                    "description": result.get('details', ''),
-                    "file_path": result.get('file_path', ''),
-                    "line_number": result.get('line_number'),
-                    "confidence": result.get('confidence', 0.5)
-                })
-                
-        except (json.JSONDecodeError, KeyError) as e:
-            logger.error(f"Failed to parse CLI output: {e}")
-            return get_mock_vulnerabilities()  # Fallback to mock data
+        logger.info(f"Scanner found {len(vulnerabilities)} vulnerabilities")
+        return vulnerabilities
         
     except Exception as e:
-        logger.error(f"CLI execution failed: {e}")
+        logger.error(f"Scanner execution failed: {e}")
         # Return mock data as fallback
-        return get_mock_vulnerabilities()
+        scanner = get_scanner()
+        return scanner._get_mock_vulnerabilities()
     
     return vulnerabilities
 
@@ -561,8 +535,8 @@ async def run_security_scan(scan_id: str, scan_request: ScanRequest):
                 # In a real implementation, we would clone the repository
                 target_path = f"/tmp/scan_{scan_id}"
         
-        # Real CLI integration with IasTam DefenSys scanner
-        vulnerabilities = await run_defensys_cli(scan_id, target_path)
+        # Run Semgrep security scanner
+        vulnerabilities = await run_security_scanner(scan_id, target_path, scan_request.scan_type)
         
         await update_scan_status(scan_id, "running", 90, "Saving scan results...")
         

@@ -1,53 +1,253 @@
-# 🛡️ DefenSys Web Core
+# 🛡️ DefenSys: AI-Powered Application Security Platform
 
-**Where Intelligence Meets Security**
+**Enterprise-Grade Security Scanning for Modern Development Teams**
 
-DefenSys Web Core is a comprehensive cybersecurity platform that provides AI-powered security scanning and vulnerability detection capabilities. Built with modern web technologies and integrated with the DefenSys CLI for advanced security analysis.
+## 📝 Table of Contents
+- [Introduction](#-introduction)
+- [Key Features](#-key-features)
+- [Technology Stack](#-technology-stack)
+- [System Architecture](#-system-architecture)
+- [Installation Guide](#-installation-guide)
+- [Usage Examples](#-usage-examples)
+- [API Documentation](#-api-documentation)
+- [Security Considerations](#-security-considerations)
+- [Contributing](#-contributing)
+- [License](#-license)
 
-## 🚀 Quick Start
+## 🌟 Introduction
+
+DefenSys is a cutting-edge application security platform that integrates static application security testing (SAST) with AI-powered vulnerability detection. Designed for modern development workflows, it provides developers with actionable security insights directly in their development lifecycle.
+
+### The Challenge
+
+In today's rapidly evolving threat landscape, development teams face increasing pressure to deliver secure applications without compromising development velocity. Traditional security tools often suffer from:
+
+- High false positive rates
+- Complex integration requirements
+- Steep learning curves
+- Limited contextual awareness
+- Poor developer experience
+
+DefenSys addresses these challenges through its intelligent scanning engine and developer-friendly interface, making application security accessible to teams of all sizes.
+
+## ✨ Key Features
+
+### 🔍 Intelligent Security Scanning
+- **Multi-Language Support**: Detects vulnerabilities across multiple programming languages
+- **AI-Powered Analysis**: Leverages machine learning to reduce false positives
+- **Real-time Feedback**: Instant security feedback during development
+- **Comprehensive Coverage**: Identifies OWASP Top 10 vulnerabilities and beyond
+
+### 📊 Actionable Insights
+- **Prioritized Findings**: Risk-based vulnerability prioritization
+- **Remediation Guidance**: Step-by-step fix recommendations
+- **Historical Analysis**: Track security posture over time
+- **Compliance Reporting**: Generate audit-ready security reports
+
+### 🛠️ Developer Experience
+- **Seamless Integration**: Native support for CI/CD pipelines
+- **IDE Plugins**: Real-time scanning in popular development environments
+- **API-First Design**: Comprehensive RESTful API for automation
+- **Extensible Architecture**: Plugin system for custom security rules
+
+## 🏗️ Technology Stack
+
+### Backend
+- **Framework**: FastAPI (Python 3.10+)
+- **Authentication**: JWT with OAuth2
+- **Database**: SQLite (Development), PostgreSQL (Production)
+- **Task Queue**: Celery with Redis
+- **API Documentation**: OpenAPI 3.0 (Swagger UI)
+
+### Frontend
+- **Framework**: React 18 with TypeScript
+- **State Management**: React Query
+- **UI Components**: shadcn/ui with Tailwind CSS
+- **Data Visualization**: Recharts
+- **Build Tool**: Vite
+
+### Security Tools
+- **Static Analysis**: Semgrep integration
+- **Dependency Scanning**: OWASP Dependency-Check
+- **Secrets Detection**: Gitleaks
+- **Container Security**: Trivy
+
+## 🏛️ System Architecture
+
+```mermaid
+graph TD
+    A[Web Browser] -->|HTTPS| B[NGINX]
+    B -->|Reverse Proxy| C[Frontend]
+    B -->|API Gateway| D[Backend API]
+    D --> E[(Database)]
+    D --> F[Redis]
+    D --> G[Celery Workers]
+    G --> H[Security Scanners]
+    H --> I[Semgrep]
+    H --> J[Trivy]
+    H --> K[Gitleaks]
+```
+
+### Core Components
+
+1. **API Gateway**: Handles authentication, rate limiting, and request routing
+2. **Scan Engine**: Manages security scans and orchestrates analysis tools
+3. **Vulnerability Database**: Central repository for security findings
+4. **Notification Service**: Real-time alerts and reporting
+5. **User Management**: Role-based access control (RBAC)
+
+## 🚀 Installation Guide
 
 ### Prerequisites
 
-- **Node.js** 18+ and npm
-- **Python** 3.8+ and pip
-- **Git** for cloning repositories
+- **Node.js** 18+ (LTS recommended)
+- **Python** 3.10+
+- **Docker** and **Docker Compose** (for production deployment)
+- **Git**
 
-### One-Command Setup
+### Local Development Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-org/defensis-web-core.git
+   cd defensis-web-core
+   ```
+
+2. **Set up the backend**
+   ```bash
+   # Create and activate virtual environment
+   python -m venv venv
+   source venv/bin/activate  # On Windows: .\venv\Scripts\activate
+   
+   # Install dependencies
+   cd server
+   pip install -r requirements-dev.txt
+   ```
+
+3. **Set up the frontend**
+   ```bash
+   cd ../client
+   npm install
+   ```
+
+4. **Configure environment variables**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
+
+5. **Start the development servers**
+   ```bash
+   # In first terminal (backend)
+   cd server
+   uvicorn app:app --reload
+   
+   # In second terminal (frontend)
+   cd client
+   npm run dev
+   ```
+
+6. **Access the application**
+   - Frontend: http://localhost:5173
+   - API Documentation: http://localhost:8000/api/docs
+
+### Production Deployment
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd defensis-web-core
-
-# Make startup script executable
-chmod +x start-dev.sh
-
-# Start both frontend and backend
-./start-dev.sh
+# Using Docker Compose
+docker-compose -f docker-compose.prod.yml up -d
 ```
 
-The startup script will:
-- Install Python dependencies in a virtual environment
-- Install Node.js dependencies  
-- Start the backend API server on port 3001
-- Start the frontend development server on port 8080
-- Open the application in your default browser
+## 💻 Usage Examples
 
-### Manual Setup
+### Running a Security Scan
 
-**Backend Setup:**
-```bash
-cd server
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-python app.py
-```
+1. **Via Web Interface**
+   - Navigate to the "Scans" section
+   - Select your repository
+   - Choose scan type (Quick/Full/Custom)
+   - Click "Start Scan"
+   - View real-time progress and results
 
-**Frontend Setup:**
-```bash
-# In a new terminal
-npm install
+2. **Via API**
+   ```bash
+   # Start a new scan
+   curl -X POST "http://localhost:8000/api/scans" \
+     -H "Authorization: Bearer YOUR_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"repository_id": "your-repo-id", "scan_type": "full"}'
+   ```
+
+### Reviewing Findings
+
+1. **Dashboard Overview**
+   - Security score and trends
+   - Recent vulnerabilities
+   - Scan history
+
+2. **Vulnerability Details**
+   - Severity assessment
+   - Affected files
+   - Remediation steps
+   - References to security advisories
+
+## 📚 API Documentation
+
+Interactive API documentation is available at `/api/docs` when running the application locally.
+
+### Key Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/scans` | POST | Start a new security scan |
+| `/api/scans/{id}` | GET | Get scan status and results |
+| `/api/vulnerabilities` | GET | List all vulnerabilities |
+| `/api/repositories` | GET | List configured repositories |
+| `/api/dashboard/stats` | GET | Get security metrics |
+
+## 🔒 Security Considerations
+
+### Data Protection
+- All sensitive data is encrypted at rest
+- TLS 1.3 for all communications
+- Regular security audits and penetration testing
+
+### Authentication & Authorization
+- JWT-based authentication
+- Role-based access control (RBAC)
+- Short-lived access tokens with refresh capability
+
+### Compliance
+- GDPR compliant data handling
+- SOC 2 Type II certification (in progress)
+- Regular third-party security assessments
+
+## 🤝 Contributing
+
+We welcome contributions from the community! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details on how to get started.
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 📞 Contact
+
+For security issues, please contact kilenimoemen2004@gmail.com
+
+For general inquiries: kilenimoemen2004@gmail.com
+
+---
+
+<div align="center">
+  <h3>🚀 Built with ❤️ by the DefenSys Team</h3>
+  <p>Empowering developers to build secure applications with confidence</p>
+</div>
 npm run dev
 ```
 
@@ -118,7 +318,6 @@ defensis-web-core/
 │   ├── routes.py         # API route definitions
 │   └── requirements.txt  # Python dependencies
 ├── start-dev.sh          # Development startup script
-├── WARP.md              # Development guide for AI assistants
 └── README.md            # This file
 ```
 

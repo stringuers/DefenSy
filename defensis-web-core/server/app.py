@@ -26,7 +26,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, FileResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 import uvicorn
 import jwt
 from passlib.context import CryptContext
@@ -151,7 +151,7 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080", "http://127.0.0.1:8080", "http://localhost:3000"],
+    allow_origins=["*"],  # Allow all origins for development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -412,10 +412,16 @@ async def get_dashboard_stats(user_id: str = Depends(get_current_user)):
 app.include_router(auth_router)
 app.include_router(dashboard_router)
 
+# Import scan routes from separate file to avoid circular imports
+from scan_routes import scan_router, repo_router
+app.include_router(scan_router)
+app.include_router(repo_router)
+logger.info("All routers registered successfully")
+
 if __name__ == "__main__":
     uvicorn.run(
         "app:app",
         host="0.0.0.0",
-        port=3001,
+        port=8000,
         reload=True
     )

@@ -74,3 +74,5 @@ class DashboardStats(BaseModel):
     issues_resolved: int
     last_scan: Optional[str] = None
     repositories: int
+    total_scans: int = 0
+    vulnerabilities: int = 0
