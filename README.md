@@ -263,13 +263,10 @@ For security issues, please contact kilenimoemen2004@gmail.com
 For general inquiries: kilenimoemen2004@gmail.com
 
 ---
-
----
-
 ### 🚀 Built with ❤️ by the DefenSys Team  
 
-<p align="center">
-  Empowering developers to build secure applications with confidence
-</p>
+
+  ##Empowering developers to build secure applications with confidence
+
 
 
